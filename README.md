@@ -1,4 +1,4 @@
-# BreadcrumbsAll_In_One_DiscordBot
+# All_In_One_DiscordBot
 discord.py와 LLM모델을 이용해서 디스코드 채팅 봇 만들기
 
 추가 예정인 기능 리스트:
