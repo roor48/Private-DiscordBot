@@ -32,10 +32,11 @@ class CivilWarCog(commands.Cog):
 
 
     @app_commands.command(name="내전생성", description="내전 인원을 모읍니다.")
-    async def createCivilWar(self, interaction: discord.Interaction, max_player:int = 0, team_count:int = 2):
-
-        await interaction.response.send_message(f"내전을 시작할 준비가 되셨나요? 반응을 추가하세요! maxPlayer: {max_player}, teamCount: {team_count}")
+    async def createCivilWar(self, interaction: discord.Interaction, message:str, max_player:int = 0, team_count:int = 2):
+        await interaction.response.send_message(f"{message}\n`최대인원: {max_player}` `팀 수: {team_count}`\n-# ✅반응을 눌러 내전에 참가하세요!")
         msg = await interaction.original_response()
+        await msg.add_reaction("✅")
+
         create_time = asyncio.get_event_loop().time()
         self.createdWarUserId[interaction.user.id] = {
             "channel_id": msg.channel.id,
@@ -51,7 +52,6 @@ class CivilWarCog(commands.Cog):
         print(self.createdWarUserId)
         print(self.createdWarMessageId)
 
-        await msg.add_reaction("✅")
 
     
     @app_commands.command(name="내전종료", description="이전에 생성한 내전을 종료합니다.")
@@ -119,7 +119,7 @@ class CivilWarCog(commands.Cog):
             # 각 팀을 멘션하여 출력
             team_mentions = []
             for i, team in enumerate(teams, 1):
-                team_mentions.append(f"팀 {i}: {', '.join(team)}")
+                team_mentions.append(f"# 팀 {i}\n{', '.join(team)}")
             
             await interaction.response.send_message("\n".join(team_mentions))
 
