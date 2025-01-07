@@ -126,22 +126,16 @@ class CivilWarCog(commands.Cog):
 
         except discord.NotFound:
             await interaction.response.send_message("이 채널에서 메시지를 찾을 수 없습니다.", ephemeral=True)
-            del self.createdWarMessageId[self.createdWarUserId[interaction.user.id]["message_id"]]
-            del self.createdWarUserId[interaction.user.id]
 
         except discord.Forbidden:
             await interaction.response.send_message("메시지를 조회할 권한이 없습니다.", ephemeral=True)
-            del self.createdWarMessageId[self.createdWarUserId[interaction.user.id]["message_id"]]
-            del self.createdWarUserId[interaction.user.id]
 
         except discord.HTTPException:
             await interaction.response.send_message("서버 오류가 발생했습니다.", ephemeral=True)
-            del self.createdWarMessageId[self.createdWarUserId[interaction.user.id]["message_id"]]
-            del self.createdWarUserId[interaction.user.id]
 
 
     # 주기적으로 만료된 내전 데이터 확인
-    @tasks.loop(minutes=30)  # 1분마다 체크 (효율성을 위해 1분 간격으로 체크)
+    @tasks.loop(minutes=30)  # 30분마다 체크
     async def check_expired_wars(self):
         current_time = asyncio.get_event_loop().time()  # 현재 시간 (초 단위)
         expired_wars = []  # 만료된 내전 목록
