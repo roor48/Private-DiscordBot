@@ -55,7 +55,7 @@ class CivilWarCog(commands.Cog):
 
     
     @app_commands.command(name="내전종료", description="이전에 생성한 내전을 종료합니다.")
-    async def removeCivilWar_(self, interaction: discord.Interaction):
+    async def removeCivilWar(self, interaction: discord.Interaction):
         if interaction.user.id not in self.createdWarUserId:
             await interaction.response.send_message("생성된 내전이 없습니다.")
             return
@@ -170,7 +170,7 @@ class CivilWarCog(commands.Cog):
                 print(f'Error While Auto-Deleting: {e}')
 
     @app_commands.command(name="print-civilwarcog", description="딕셔너리 출력")
-    async def removeCivilWar(self, interaction: discord.Interaction):
+    async def test(self, interaction: discord.Interaction):
         if interaction.user.id != 468316922052608000:
             await interaction.response.send_message("이 기능은 관리자만 사용할 수 있습니다.", ephemeral=True)
             return
