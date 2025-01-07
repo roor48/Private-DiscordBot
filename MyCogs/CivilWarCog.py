@@ -33,7 +33,10 @@ class CivilWarCog(commands.Cog):
 
     @app_commands.command(name="내전생성", description="내전 인원을 모읍니다.")
     async def createCivilWar(self, interaction: discord.Interaction, message:str, max_player:int = 0, team_count:int = 2):
-        await interaction.response.send_message(f"{message}\n`최대인원: {max_player}` `팀 수: {team_count}`\n-# ✅반응을 눌러 내전에 참가하세요!")
+        if team_count <= 0:
+            await interaction.response.send_message("team_count는 1 이상이여야 합니다.")
+
+        await interaction.response.send_message(f"{message}\n`최대인원: {'no_limits' if max_player==0 else max_player}` `팀 수: {team_count}`\n-# ✅반응을 눌러 내전에 참가하세요!")
         msg = await interaction.original_response()
         await msg.add_reaction("✅")
 
@@ -75,7 +78,7 @@ class CivilWarCog(commands.Cog):
         del self.createdWarMessageId[self.createdWarUserId[interaction.user.id]["message_id"]]
         del self.createdWarUserId[interaction.user.id]
 
-    @app_commands.command(name="팀뽑기", description="반응한 사람들 중 팀 랜덤 배치")
+    @app_commands.command(name="팀뽑기", description="반응한 사람 중 팀 랜덤 배치")
     async def getTeam(self, interaction: discord.Interaction): # /팀뽑기 명령어
         try:
             if interaction.user.id not in self.createdWarUserId:
@@ -126,10 +129,18 @@ class CivilWarCog(commands.Cog):
 
         except discord.NotFound:
             await interaction.response.send_message("이 채널에서 메시지를 찾을 수 없습니다.", ephemeral=True)
+            del self.createdWarMessageId[self.createdWarUserId[interaction.user.id]["message_id"]]
+            del self.createdWarUserId[interaction.user.id]
+
         except discord.Forbidden:
             await interaction.response.send_message("메시지를 조회할 권한이 없습니다.", ephemeral=True)
+            del self.createdWarMessageId[self.createdWarUserId[interaction.user.id]["message_id"]]
+            del self.createdWarUserId[interaction.user.id]
+
         except discord.HTTPException:
             await interaction.response.send_message("서버 오류가 발생했습니다.", ephemeral=True)
+            del self.createdWarMessageId[self.createdWarUserId[interaction.user.id]["message_id"]]
+            del self.createdWarUserId[interaction.user.id]
 
 
     # 주기적으로 만료된 내전 데이터 확인
