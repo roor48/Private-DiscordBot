@@ -52,13 +52,10 @@ class CivilWarCog(commands.Cog):
             "user_id": interaction.user.id,
         }
 
-        print(self.createdWarUserId)
-        print(self.createdWarMessageId)
-
 
     
     @app_commands.command(name="내전종료", description="이전에 생성한 내전을 종료합니다.")
-    async def removeCivilWar(self, interaction: discord.Interaction):
+    async def removeCivilWar_(self, interaction: discord.Interaction):
         if interaction.user.id not in self.createdWarUserId:
             await interaction.response.send_message("생성된 내전이 없습니다.")
             return
@@ -158,17 +155,26 @@ class CivilWarCog(commands.Cog):
 
         # 만료된 내전 삭제
         for user_id in expired_wars:
-            message_id = self.createdWarUserId[user_id]["message_id"]
-            # 관련된 메시지에 24시간 후에 내전이 삭제됐다는 알림을 보내기
-            channel = self.client.get_channel(self.createdWarUserId[user_id]["channel_id"])
-            message = await channel.fetch_message(message_id)
+            try:
+                channel_id = self.createdWarUserId[user_id]["channel_id"]
+                message_id = self.createdWarUserId[user_id]["message_id"]
 
-            del self.createdWarUserId[user_id]
-            del self.createdWarMessageId[message_id]
-            await message.reply("이 내전은 24시간이 지나 자동으로 종료되었습니다.")
+                del self.createdWarUserId[user_id]
+                del self.createdWarMessageId[message_id]
+            
+                # 관련된 메시지에 24시간 후에 내전이 삭제됐다는 알림을 보내기
+                channel = self.client.get_channel(channel_id)
+                message = await channel.fetch_message(message_id)
+                await message.reply("이 내전은 24시간이 지나 자동으로 종료되었습니다.")
+            except Exception as e:
+                print(f'Error While Auto-Deleting: {e}')
 
-    @app_commands.command(name="테스트", description="딕셔너리 출력")
+    @app_commands.command(name="print-civilwarcog", description="딕셔너리 출력")
     async def removeCivilWar(self, interaction: discord.Interaction):
+        if interaction.user.id != 468316922052608000:
+            await interaction.response.send_message("이 기능은 관리자만 사용할 수 있습니다.", ephemeral=True)
+            return
+
         print(self.createdWarUserId)
         print(self.createdWarMessageId)
 

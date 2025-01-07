@@ -24,8 +24,6 @@ class MyClient(commands.Bot):
     def __init__(self, *, intents: discord.Intents):
         super().__init__(command_prefix="!", intents=intents)
 
-        # self.tree = app_commands.CommandTree(self)
-
     async def on_ready(self):
         print(f'Logged on as {self.user}!')
 
@@ -35,11 +33,13 @@ class MyClient(commands.Bot):
         await self.add_cog(SimpleCommandsCog(self)) # 간단한 명령어 Cog
 
         # sync to a specific guild
-        test_guild = discord.Object(id=1325768627596820574)
-        self.tree.copy_global_to(guild=test_guild)
+        # test_guild = discord.Object(id=1325768627596820574)
+        # await self.tree.sync(guild=test_guild)  # 특정 길드에만 동기화
         
         # sync to all servers if no specification
         await self.tree.sync()
+
+        print('slash command sync success')
 
 intents = discord.Intents.default()
 intents.message_content = True
