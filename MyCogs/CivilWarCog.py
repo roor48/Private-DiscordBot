@@ -78,6 +78,8 @@ class CivilWarCog(commands.Cog):
             "user_id": interaction.user.id,
         }
 
+        print('A new civil war has been created.')
+
 
 
     

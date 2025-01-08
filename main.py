@@ -56,9 +56,11 @@ class MyClient(commands.Bot):
 
     # 오버라이딩
     async def close(self):
+        print('봇 종료 중...')
         # 클린업 작업을 비동기적으로 수행한 후 봇을 종료합니다.
         await self.cleanup()  # 비동기적으로 cleanup을 호출
         await super().close()  # 그 후 기본 close 메서드를 호출하여 봇 종료
+        print('봇 종료 완료!')
 
     async def cleanup(self):
         await self.get_cog("CivilWarCog").on_close()
