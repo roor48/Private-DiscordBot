@@ -11,14 +11,8 @@ pip install -U discord.py
 """
 
 import os
-import sys
-
-import signal
-import asyncio
-
 import discord
 from discord.ext import commands
-from discord import app_commands
 
 from MyCogs import *
 
