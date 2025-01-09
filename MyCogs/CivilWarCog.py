@@ -48,6 +48,7 @@ class CivilWarCog(commands.Cog):
 
 
     @app_commands.command(name="내전생성", description="내전 인원을 모읍니다.")
+    @app_commands.describe(message="링크를 입력해주세요!", max_player="최대 인원입니다. 0으로 설정 시 제한 없음\n기본=0", team_count="나눌 팀 수 입니다.\n기본=2")
     async def createCivilWar(self, interaction: discord.Interaction, message:str, max_player:int = 0, team_count:int = 2):
         if len(message) > 200:
             await interaction.response.send_message("message는 200자 이내로 작성해주세요.", ephemeral=True)
@@ -164,9 +165,9 @@ class CivilWarCog(commands.Cog):
             await self.createdWarUserId[user_id]["message"].edit(content="이 내전은 종료되었습니다.")
             await self.createdWarUserId[user_id]["message"].unpin(reason="내전이 종료되었습니다.")
         except: ...
-
-        del self.createdWarUserId[user_id]
-        del self.createdWarMessageId[message_id]
+        finally:
+            del self.createdWarUserId[user_id]
+            del self.createdWarMessageId[message_id]
 
     # 주기적으로 만료된 내전 데이터 확인
     @tasks.loop(minutes=30)  # 30분마다 체크
