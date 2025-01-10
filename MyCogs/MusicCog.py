@@ -106,6 +106,10 @@ class MusicCog(commands.Cog):
     @app_commands.command(name="play", description="노래를 재생합니다.")
     @app_commands.describe(url="주소 혹은 검색할 텍스트를 입력해주세요.")
     async def add_music(self, interaction: discord.Interaction, url: str):
+        if isinstance(interaction.user, discord.User):
+            await interaction.response.send_message('개인 메세지에선 지원하지 않습니다.')
+            return
+        
         if not interaction.user.voice:
             await interaction.response.send_message('먼저 음성 채팅방에 들어가주세요.', ephemeral=True)
             return
@@ -169,6 +173,10 @@ class MusicCog(commands.Cog):
 
     @app_commands.command(name="queue", description="대기열을 확인합니다.")
     async def queue(self, interaction: discord.Interaction):
+        if isinstance(interaction.user, discord.User):
+            await interaction.response.send_message('개인 메세지에선 지원하지 않습니다.')
+            return
+        
         queue: list[queue_element] = self.queues.get(interaction.guild_id, False)
         if not queue:
             await interaction.response.send_message('대기열에 노래가 없습니다.')
@@ -201,6 +209,10 @@ class MusicCog(commands.Cog):
 
     @app_commands.command(name="pause", description="멈춤")
     async def pause(self, interaction: discord.Interaction):
+        if isinstance(interaction.user, discord.User):
+            await interaction.response.send_message('개인 메세지에선 지원하지 않습니다.')
+            return
+        
         if not interaction.guild_id in self.voice_clients:
             await interaction.response.send_message('봇이 채널에 없습니다.')
             return
@@ -218,6 +230,10 @@ class MusicCog(commands.Cog):
 
     @app_commands.command(name="resume", description="재생")
     async def resume(self, interaction: discord.Interaction):
+        if isinstance(interaction.user, discord.User):
+            await interaction.response.send_message('개인 메세지에선 지원하지 않습니다.')
+            return
+        
         if not interaction.guild_id in self.voice_clients:
             await interaction.response.send_message('봇이 채널에 없습니다.')
             return
@@ -234,6 +250,10 @@ class MusicCog(commands.Cog):
 
     @app_commands.command(name="clear", description="대기열 제거")
     async def clear_queue(self, interaction: discord.Interaction):
+        if isinstance(interaction.user, discord.User):
+            await interaction.response.send_message('개인 메세지에선 지원하지 않습니다.')
+            return
+        
         if interaction.guild_id in self.queues:
             self.queues[interaction.guild_id].clear()
 
@@ -244,6 +264,10 @@ class MusicCog(commands.Cog):
 
     @app_commands.command(name="leave", description="봇 내보내기")
     async def leave(self, interaction: discord.Interaction):
+        if isinstance(interaction.user, discord.User):
+            await interaction.response.send_message('개인 메세지에선 지원하지 않습니다.')
+            return
+        
         voice_client = self.voice_clients.get(interaction.guild_id, False)
         if voice_client:
             await interaction.response.send_message('봇을 내보냈습니다.')
