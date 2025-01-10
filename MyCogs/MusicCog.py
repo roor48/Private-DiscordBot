@@ -160,7 +160,7 @@ class MusicCog(commands.Cog):
 
         except Exception as e:
             print(f'{type(e)} Has Been Occurred: {e}')
-            embed.title = f"{type(e)} 오류발생"
+            embed = discord.Embed(title=f"{type(e)} 오류발생", colour=discord.Colour.brand_red())
             await message.edit(embed=embed)
 
 
@@ -193,7 +193,7 @@ class MusicCog(commands.Cog):
         
         except Exception as e:
             print(f'{type(e)} Has Been Occurred: {e}')
-            embed.title = f"{type(e)} 오류발생"
+            embed = discord.Embed(title=f"{type(e)} 오류발생", colour=discord.Colour.brand_red())
             await message.edit(embed=embed)
 
 

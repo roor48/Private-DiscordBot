@@ -8,11 +8,17 @@ discord.py의 Cog기능을 이용해서 봇을 만들어보았습니다!
 
 python 3.10.12
 
-dotenv 1.0.1
+dotenv 1.0.1  
 pip install python-dotenv
 
-discord 2.4.0
+discord 2.4.0  
 pip install -U discord.py
 
-yt-dlp 2024.12.23
+yt-dlp 2024.12.23  
 pip install yt-dlp
+
+PyNaCl 1.5.0  
+pip install PyNaCl
+
+ffmpeg  
+https://www.ffmpeg.org/download.html

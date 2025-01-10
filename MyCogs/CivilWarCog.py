@@ -199,20 +199,8 @@ class CivilWarCog(commands.Cog):
         if interaction.user.id != 468316922052608000:
             await interaction.response.send_message("이 기능은 관리자만 사용할 수 있습니다.", ephemeral=True)
             return
-
-        import psutil
-        import os
-
-        # 현재 프로세스의 PID 얻기
-        pid = os.getpid()
-
-        # psutil을 사용하여 프로세스 객체 얻기
-        process = psutil.Process(pid)
-
-        # 메모리 사용량 확인 (단위: 바이트)
-        memory_info = process.memory_info()
-
-        await interaction.response.send_message(f'`RSS (Resident Set Size): {memory_info.rss/1024/1024}mb`\n`VMS (Virtual Memory Size): {memory_info.vms/1024/1024/1024}gb`')
+        
+        await interaction.response.send_message(f"{self.createdWarUserId}\n{self.createdWarMessageId}")
 
         print(len(self.createdWarUserId))
         print(len(self.createdWarMessageId))
