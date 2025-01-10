@@ -25,7 +25,8 @@ class MusicCog(commands.Cog):
         self.youtube_results_url: str = self.youtube_base_url[0] + 'results?'
         self.youtube_watch_url: str = self.youtube_base_url[0] + 'watch?v='
         self.ytdl: YoutubeDL = YoutubeDL({
-            "format": "bestaudio/best"
+            'format': 'bestaudio/best',
+            'cookiefile': './cookies.txt',  # 쿠키 파일 경로 추가
         })
 
         self.ffmpeg_options: dict = {'before_options': '-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5','options': '-vn -filter:a "volume=0.25"'}
@@ -102,10 +103,9 @@ class MusicCog(commands.Cog):
 
 
 
-
     @app_commands.command(name="play", description="노래를 재생합니다.")
     @app_commands.describe(url="주소 혹은 검색할 텍스트를 입력해주세요.")
-    async def add_music(self, interaction: discord.Interaction, url: str = 'https://www.youtube.com/watch?v=cq8WquQioXY'):
+    async def add_music(self, interaction: discord.Interaction, url: str):
         if not interaction.user.voice:
             await interaction.response.send_message('먼저 음성 채팅방에 들어가주세요.', ephemeral=True)
             return
@@ -130,6 +130,7 @@ class MusicCog(commands.Cog):
         message = await interaction.original_response()
         
         try:
+            url = url.replace(' ', '')
             if self.youtube_base_url[0] not in url and self.youtube_base_url[1] not in url:
                 url = self.search_youtube(url)
                 if not url:
