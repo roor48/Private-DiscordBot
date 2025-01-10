@@ -10,7 +10,7 @@ import asyncio
 
 class CivilWarCog(commands.Cog):
     def __init__(self, client):
-        self.client = client
+        self.client: commands.Bot = client
         self.createdWarUserId = {}
         self.createdWarMessageId = {}
         self.check_expired_wars.start()  # 주기적으로 만료된 내전 체크 시작
@@ -48,7 +48,7 @@ class CivilWarCog(commands.Cog):
 
 
     @app_commands.command(name="내전생성", description="내전 인원을 모읍니다.")
-    @app_commands.describe(message="링크를 입력해주세요!", max_player="최대 인원입니다. 0으로 설정 시 제한 없음\n기본=0", team_count="나눌 팀 수 입니다.\n기본=2")
+    @app_commands.describe(message="내용을 입력해주세요!", max_player="최대 인원입니다. 0으로 설정 시 제한 없음\n기본=0", team_count="나눌 팀 수 입니다.\n기본=2")
     async def createCivilWar(self, interaction: discord.Interaction, message:str, max_player:int = 0, team_count:int = 2):
         if len(message) > 200:
             await interaction.response.send_message("message는 200자 이내로 작성해주세요.", ephemeral=True)

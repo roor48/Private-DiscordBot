@@ -4,7 +4,7 @@ from discord import app_commands
 
 class SimpleCommandsCog(commands.Cog):
     def __init__(self, client):
-        self.client = client
+        self.client: commands.Bot = client
 
     @app_commands.command(name="종료", description="봇을 종료합니다.")
     async def stop_bot(self, interaction: discord.Interaction):
