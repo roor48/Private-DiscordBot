@@ -26,7 +26,11 @@ class MusicCog(commands.Cog):
         self.youtube_watch_url: str = self.youtube_base_url[0] + 'watch?v='
         self.ytdl: YoutubeDL = YoutubeDL({
             'format': 'bestaudio/best',
-            'cookiefile': './cookies.txt',  # 쿠키 파일 경로 추가
+            'cookiefile': './cookies.txt',  # 쿠키 파일 경로
+
+            'http_headers': {
+                'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36'
+            }
         })
 
         self.ffmpeg_options: dict = {'before_options': '-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5','options': '-vn -filter:a "volume=0.25"'}

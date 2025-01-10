@@ -22,3 +22,5 @@ pip install PyNaCl
 
 ffmpeg  
 https://www.ffmpeg.org/download.html
+
+yt-dlp -f "bestvideo[ext=mp4]+bestaudio[ext=m4a]" -o './%(title)s.%(ext)s' --cookies-from-browser chrome "유튜브링크"
