@@ -152,8 +152,9 @@ class MusicCog(commands.Cog):
 
 
 
-    @app_commands.command(name="play", description="노래를 재생합니다.")
-    @app_commands.describe(url="유튜브 주소 혹은 검색할 텍스트를 입력해주세요.")
+    @app_commands.command(name="재생", description="노래를 재생합니다.")
+    @app_commands.describe(url="검색할 노래 혹은 유튜브 URL을 입력해주세요.")
+    @app_commands.rename(url="검색어")
     async def add_music(self, interaction: discord.Interaction, url: str):
         if isinstance(interaction.user, discord.User):
             await interaction.response.send_message('개인 메세지에선 지원하지 않습니다.')
@@ -218,7 +219,7 @@ class MusicCog(commands.Cog):
 
 
 
-    @app_commands.command(name="skip", description="현재 노래를 건너뜁니다.")
+    @app_commands.command(name="건너뛰기", description="현재 노래를 건너뜁니다.")
     async def skip(self, interaction: discord.Interaction):
         if isinstance(interaction.user, discord.User):
             await interaction.response.send_message('개인 메세지에선 지원하지 않습니다.')
@@ -239,8 +240,15 @@ class MusicCog(commands.Cog):
         embed.title = "곡 하나를 건너뛰었습니다!"
         await message.edit(embed=embed)
 
-    @app_commands.command(name="repeat", description="반복 모드를 설정합니다.")
-    async def repeat(self, interaction: discord.Interaction):
+
+
+    @app_commands.command(name="반복모드", description="반복 모드를 설정합니다.")
+    @app_commands.choices(val=[
+        app_commands.Choice(name="반복 없음", value=0),
+        app_commands.Choice(name="단일 반복", value=1),
+        app_commands.Choice(name="전체 반복", value=2)
+    ])
+    async def repeat(self, interaction: discord.Interaction, val: app_commands.Choice[int] = None):
         if isinstance(interaction.user, discord.User):
             await interaction.response.send_message('개인 메세지에선 지원하지 않습니다.')
             return
@@ -249,17 +257,20 @@ class MusicCog(commands.Cog):
         await interaction.response.send_message(embed=embed)
         message = await interaction.original_response()
 
-        val = self.repeat_mode.get(interaction.guild_id, 0) + 1
-        if val > 2:
-            val = 0
-        self.repeat_mode[interaction.guild_id] = val
+        if not val:
+            val = self.repeat_mode.get(interaction.guild_id, 0) + 1
+            if val > 2:
+                val = 0
+        self.repeat_mode[interaction.guild_id] = val.value
 
         arr = ["반복 없음", "단일 반복", "전체 반복"]
         embed.title = "설정 완료"
-        embed.add_field(name="반복 모드", value=arr[self.repeat_mode[interaction.guild_id]])
+        embed.add_field(name=arr[self.repeat_mode[interaction.guild_id]], value="")
         await message.edit(embed=embed)
 
-    @app_commands.command(name="queue", description="대기열을 확인합니다.")
+
+
+    @app_commands.command(name="대기열", description="대기열을 확인합니다.")
     async def queue(self, interaction: discord.Interaction):
         if isinstance(interaction.user, discord.User):
             await interaction.response.send_message('개인 메세지에선 지원하지 않습니다.')
@@ -296,7 +307,7 @@ class MusicCog(commands.Cog):
 
 
 
-    @app_commands.command(name="pause", description="멈춤")
+    @app_commands.command(name="일시정지", description="재생 중인 노래 일시정지")
     async def pause(self, interaction: discord.Interaction):
         if isinstance(interaction.user, discord.User):
             await interaction.response.send_message('개인 메세지에선 지원하지 않습니다.')
@@ -317,7 +328,7 @@ class MusicCog(commands.Cog):
 
 
 
-    @app_commands.command(name="resume", description="재생")
+    @app_commands.command(name="일시정지해제", description="멈춘 노래 다시 재생하기")
     async def resume(self, interaction: discord.Interaction):
         if isinstance(interaction.user, discord.User):
             await interaction.response.send_message('개인 메세지에선 지원하지 않습니다.')
@@ -337,7 +348,7 @@ class MusicCog(commands.Cog):
 
 
 
-    @app_commands.command(name="clear", description="대기열 제거")
+    @app_commands.command(name="대기열_제거", description="대기열 제거")
     async def clear_queue(self, interaction: discord.Interaction):
         if isinstance(interaction.user, discord.User):
             await interaction.response.send_message('개인 메세지에선 지원하지 않습니다.')
@@ -351,7 +362,7 @@ class MusicCog(commands.Cog):
 
 
 
-    @app_commands.command(name="leave", description="봇 내보내기")
+    @app_commands.command(name="나가기", description="봇 내보내기")
     async def leave(self, interaction: discord.Interaction):
         if isinstance(interaction.user, discord.User):
             await interaction.response.send_message('개인 메세지에선 지원하지 않습니다.')
