@@ -3,7 +3,8 @@ from discord.ext import commands
 from discord import app_commands
 from yt_dlp import YoutubeDL, utils
 import asyncio
-import urllib.parse, urllib.request, re
+import urllib.parse, urllib.request
+import re
 
 class queue_element:
     def __init__(self, original_url: str, url: str, thumbnail: str, title: str, duration: int):
@@ -13,6 +14,21 @@ class queue_element:
         self.title = title
         self.duration = duration
 
+def is_youtube_link(url: str) -> bool:
+    """
+    정규식 설명:
+        https?:// : http 또는 https로 시작하는 URL
+        (www\.)? : www.이 있을 수도 있고 없을 수도 있음
+        (youtube|youtu)\.(com|be) : youtube.com, youtu.be 도메인
+        (watch\?v=|(?:[a-zA-Z0-9_-]+/)+) : watch?v= 패턴 또는 youtu.be/ 패턴
+        ([a-zA-Z0-9_-]{11}) : 영상 ID는 11자의 알파벳, 숫자, 하이픈(-), 언더스코어(_)로 이루어져 있음
+    """
+
+    youtube_regex = (
+        r'(https?://)?(www\.)?(youtube|youtu)\.(com|be)/'
+        r'(watch\?v=|(?:[a-zA-Z0-9_-]+/)+)([a-zA-Z0-9_-]{11})')
+    return bool(re.match(youtube_regex, url))
+
 class MusicCog(commands.Cog):
     def __init__(self, client):
         self.client: commands.Bot = client
@@ -21,9 +37,9 @@ class MusicCog(commands.Cog):
         self.queues: dict[int, list[queue_element]] = {}
         self.voice_clients: dict[int, discord.VoiceClient] = {}
 
-        self.youtube_base_url: tuple = ('https://www.youtube.com/', 'https://youtu.be/')
-        self.youtube_results_url: str = self.youtube_base_url[0] + 'results?'
-        self.youtube_watch_url: str = self.youtube_base_url[0] + 'watch?v='
+        self.youtube_results_url: str = 'https://www.youtube.com/results?'
+        self.youtube_watch_url: str = 'https://www.youtube.com/watch?v='
+
         self.ytdl: YoutubeDL = YoutubeDL({
             'format': 'bestaudio/best',
             'cookiefile': './cookies.txt',  # 쿠키 파일 경로
@@ -108,7 +124,7 @@ class MusicCog(commands.Cog):
 
 
     @app_commands.command(name="play", description="노래를 재생합니다.")
-    @app_commands.describe(url="주소 혹은 검색할 텍스트를 입력해주세요.")
+    @app_commands.describe(url="유튜브 주소 혹은 검색할 텍스트를 입력해주세요.")
     async def add_music(self, interaction: discord.Interaction, url: str):
         if isinstance(interaction.user, discord.User):
             await interaction.response.send_message('개인 메세지에선 지원하지 않습니다.')
@@ -139,7 +155,7 @@ class MusicCog(commands.Cog):
         
         try:
             url = url.replace(' ', '')
-            if self.youtube_base_url[0] not in url and self.youtube_base_url[1] not in url:
+            if not is_youtube_link(url):
                 url = self.search_youtube(url)
                 if not url:
                     embed = discord.Embed(title="검색 결과가 없습니다.", colour=discord.Colour.brand_red())
