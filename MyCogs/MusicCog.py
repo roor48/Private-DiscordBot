@@ -86,6 +86,7 @@ class MusicCog(commands.Cog):
                              data.get('title', None), 
                              data.get('duration', None))
 
+
     async def play_next(self, message: discord.Message):
         q_elements = self.queues.get(message.guild.id, None)
         if q_elements: # url이 있고 요소가 있으면
@@ -101,14 +102,6 @@ class MusicCog(commands.Cog):
                 await voice_client.disconnect()
     
     async def play_music(self, q_ele: queue_element, message: discord.Message):
-        # try:
-        #     data = await loop.run_in_executor(None, lambda: self.ytdl.extract_info(url, download=False))
-        # except utils.DownloadError as e:
-        #     embed = discord.Embed(title="올바른 주소가 아닙니다.", colour=discord.Colour.brand_red())
-        #     await message.edit(embed=embed)
-        #     return
-
-
         embed = discord.Embed(title=q_ele.title, colour=discord.Colour.brand_red(), url=q_ele.original_url)
         embed.set_thumbnail(url=q_ele.thumbnail)
         embed.set_author(name="현재 재생 중")
@@ -162,12 +155,8 @@ class MusicCog(commands.Cog):
                     await message.edit(embed=embed)
                     return
             
-            try:
-                q_ele = await self.get_youtube_info(url)
-            except utils.DownloadError as e:
-                embed = discord.Embed(title="올바른 주소가 아닙니다.", colour=discord.Colour.brand_red())
-                await message.edit(embed=embed)
-                return
+
+            q_ele = await self.get_youtube_info(url)
             
             self.queues[interaction.guild_id].append(q_ele)
 
