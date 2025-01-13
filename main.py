@@ -8,10 +8,6 @@ from dotenv import load_dotenv
 load_dotenv()
 del load_dotenv
 
-# 종료 시 실행될 함수
-def on_bot_exit():
-    print("Bot is exiting...")
-
 
 class MyClient(commands.Bot):
     def __init__(self, *, intents: discord.Intents):

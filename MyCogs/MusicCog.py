@@ -65,9 +65,12 @@ class MusicCog(commands.Cog):
 
             if member.id != self.client.user.id:
                 if all(m.bot for m in before.channel.members):
-                    await voice_client.disconnect()
+                    try: # disconnect는 되지만 timeout뜸
+                        await voice_client.disconnect()
+                    except: ... # 무시
                 return
 
+            print('deleting...')
             if member.guild.id in self.voice_clients:
                 del self.voice_clients[member.guild.id]
 
@@ -79,6 +82,7 @@ class MusicCog(commands.Cog):
 
             if member.guild.id in self.repeat_mode:
                 del self.repeat_mode[member.guild.id]
+            print('deleted!')
         
         except Exception as e:
             print_exc()
@@ -128,12 +132,8 @@ class MusicCog(commands.Cog):
             q_ele = q_elements.pop(0)
             await self.play_music(q_ele, channel)
         else: # 더 이상 재생할 노래가 없으면 disconnect
-            if q_elements:
-                del self.queues[channel.guild.id]
-
             voice_client = self.voice_clients.get(channel.guild.id, None)
             if voice_client:
-                del self.voice_clients[channel.guild.id]
                 await voice_client.disconnect()
     
     async def play_music(self, q_ele: queue_element, channel: discord.TextChannel):
@@ -305,9 +305,9 @@ class MusicCog(commands.Cog):
         if not interaction.guild_id in self.voice_clients:
             await interaction.response.send_message('봇이 채널에 없습니다.')
             return
-        # if not self.voice_clients[interaction.guild_id].is_playing():
-        #     await interaction.response.send_message('멈출 노래가 없습니다.')
-        #     return
+        if not self.voice_clients[interaction.guild_id].is_playing() and not self.voice_clients[interaction.guild_id].is_paused():
+            await interaction.response.send_message('멈출 노래가 없습니다.')
+            return
         if self.voice_clients[interaction.guild_id].is_paused():
             await interaction.response.send_message('이미 멈춘 상태입니다.')
             return
@@ -326,9 +326,9 @@ class MusicCog(commands.Cog):
         if not interaction.guild_id in self.voice_clients:
             await interaction.response.send_message('봇이 채널에 없습니다.')
             return
-        # if not self.voice_clients[interaction.guild_id].is_playing():
-        #     await interaction.response.send_message('재생할 노래가 없습니다.')
-        #     return
+        if not self.voice_clients[interaction.guild_id].is_playing() and not self.voice_clients[interaction.guild_id].is_paused():
+            await interaction.response.send_message('재생할 노래가 없습니다.')
+            return
         if not self.voice_clients[interaction.guild_id].is_paused():
             await interaction.response.send_message('이미 재생 중입니다.')
             return
@@ -360,7 +360,9 @@ class MusicCog(commands.Cog):
         voice_client = self.voice_clients.get(interaction.guild_id, False)
         if voice_client:
             await interaction.response.send_message('봇을 내보냈습니다.')
-            await self.voice_clients[interaction.guild_id].disconnect()
+            try: # disconnect는 되지만 timeout뜸
+                await voice_client.disconnect()
+            except: ... # 무시
         else:
             await interaction.response.send_message('봇이 채널에 없습니다.')
 
