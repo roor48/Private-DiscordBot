@@ -3,16 +3,12 @@ from discord.ext import commands, tasks
 from discord import app_commands
 from datetime import datetime, timezone
 import random
-import asyncio
-
-# todo
-# 내전종료시 reply 제거, 메시지 수정하는 방법으로
 
 class CivilWarCog(commands.Cog):
     def __init__(self, client):
         self.client: commands.Bot = client
-        self.createdWarUserId = {}
-        self.createdWarMessageId = {}
+        self.createdWarUserId: dict[int, dict[str]] = {}
+        self.createdWarMessageId: dict[int, dict[str, int]] = {}
         self.check_expired_wars.start()  # 주기적으로 만료된 내전 체크 시작
 
     async def on_close(self):
@@ -29,7 +25,7 @@ class CivilWarCog(commands.Cog):
             await self.deleteCreateDict(user_ids[i], msg_ids[i])
 
     @commands.Cog.listener()
-    async def on_reaction_add(self, reaction, user): # 반응이 추가됐을때 호출
+    async def on_reaction_add(self, reaction: discord.Reaction, user: discord.Member | discord.User): # 반응이 추가됐을때 호출
         if user == self.client.user:
             return
         if reaction.emoji != "✅":
@@ -160,7 +156,7 @@ class CivilWarCog(commands.Cog):
         except discord.HTTPException:
             await interaction.response.send_message("서버 오류가 발생했습니다.", ephemeral=True)
 
-    async def deleteCreateDict(self, user_id, message_id):
+    async def deleteCreateDict(self, user_id: int, message_id: int):
         try:
             await self.createdWarUserId[user_id]["message"].edit(content="이 내전은 종료되었습니다.")
             await self.createdWarUserId[user_id]["message"].unpin(reason="내전이 종료되었습니다.")
