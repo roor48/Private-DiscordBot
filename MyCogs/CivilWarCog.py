@@ -185,7 +185,7 @@ class CivilWarCog(commands.Cog):
         for user_id in expired_wars:
             try:
                 message = self.createdWarUserId[user_id]['message']
-                self.deleteCreateDict(user_id, message.id)
+                await self.deleteCreateDict(user_id, message.id)
 
             except Exception as e:
                 print(f'Error While Auto-Deleting: {e}')
