@@ -7,7 +7,7 @@ import asyncio
 import urllib.parse, urllib.request
 import re
 
-class queue_element:
+class music_info:
     def __init__(self, original_url: str, url: str, thumbnail: str, title: str, duration: int):
         self.original_url = original_url
         self.url = url
@@ -36,8 +36,8 @@ class MusicCog(commands.Cog):
         
         self.repeat_mode: dict[int, int] = {} # 0 반복 없음, 1 단일 반복, 2 전체 반복
 
-        self.now_playing: dict[int, queue_element] = {}
-        self.queues: dict[int, list[queue_element]] = {}
+        self.now_playing: dict[int, music_info] = {}
+        self.queues: dict[int, list[music_info]] = {}
         self.voice_clients: dict[int, discord.VoiceClient] = {}
 
         self.youtube_results_url: str = 'https://www.youtube.com/results?'
@@ -70,24 +70,25 @@ class MusicCog(commands.Cog):
                     except: ... # 무시
                 return
 
-            print('deleting...')
-            if member.guild.id in self.voice_clients:
-                del self.voice_clients[member.guild.id]
-
-            if member.guild.id in self.queues:
-                del self.queues[member.guild.id]
-
-            if member.guild.id in self.now_playing:
-                del self.now_playing[member.guild.id]
-
-            if member.guild.id in self.repeat_mode:
-                del self.repeat_mode[member.guild.id]
-            print('deleted!')
+            self.clear_guild_dict(member.guild.id)
         
         except Exception as e:
             print_exc()
             print(f'{type(e)} Has Been Occurred: {e}')
 
+    def clear_guild_dict(self, guild_id: int):
+        print('deleting...')
+        if guild_id in self.voice_clients:
+            del self.voice_clients[guild_id]
+
+        if guild_id in self.queues:
+            del self.queues[guild_id]
+
+        if guild_id in self.now_playing:
+            del self.now_playing[guild_id]
+
+        if guild_id in self.repeat_mode:
+            del self.repeat_mode[guild_id]
 
     def search_youtube(self, url: str):
         query_string = urllib.parse.urlencode({
@@ -108,7 +109,7 @@ class MusicCog(commands.Cog):
         loop = asyncio.get_event_loop()
         data = await loop.run_in_executor(None, lambda: self.ytdl.extract_info(url, download=False))
 
-        return queue_element(url,
+        return music_info(url,
                              data.get('url', None), 
                              data.get('thumbnail', None), 
                              data.get('title', None), 
@@ -116,38 +117,38 @@ class MusicCog(commands.Cog):
 
 
     async def play_next(self, channel: discord.TextChannel):
-
-        q_elements = self.queues.get(channel.guild.id, None)
+        music_infos: list[music_info] = self.queues.get(channel.guild.id, None)
     
         now_playing = self.now_playing.get(channel.guild.id, None)
         if now_playing and channel.guild.id in self.repeat_mode:
             if self.repeat_mode[channel.guild.id] == 1:
-                self.play_music(now_playing)
+                await self.play_music(now_playing, channel)
                 return
             elif self.repeat_mode[channel.guild.id] == 2:
-                q_elements.append(now_playing)
+                music_infos.append(now_playing)
 
 
-        if q_elements: # url이 있고 요소가 있으면
-            q_ele = q_elements.pop(0)
-            await self.play_music(q_ele, channel)
+        if music_infos: # url이 있고 요소가 있으면
+            m_info = music_infos.pop(0)
+            await self.play_music(m_info, channel)
+
         else: # 더 이상 재생할 노래가 없으면 disconnect
             voice_client = self.voice_clients.get(channel.guild.id, None)
             if voice_client:
                 await voice_client.disconnect()
     
-    async def play_music(self, q_ele: queue_element, channel: discord.TextChannel):
-        embed = discord.Embed(title=q_ele.title, colour=discord.Colour.brand_red(), url=q_ele.original_url)
-        embed.set_thumbnail(url=q_ele.thumbnail)
+    async def play_music(self, m_info: music_info, channel: discord.TextChannel):
+        embed = discord.Embed(title=m_info.title, colour=discord.Colour.brand_red(), url=m_info.original_url)
+        embed.set_thumbnail(url=m_info.thumbnail)
         embed.set_author(name="현재 재생 중")
-        embed.add_field(name="영상 길이", value=f"{q_ele.duration//60:02}:{q_ele.duration%60:02}")
+        embed.add_field(name="영상 길이", value=f"{m_info.duration//60:02}:{m_info.duration%60:02}")
 
         await channel.send(embed=embed)
 
-        song = q_ele.url
+        song = m_info.url
         player = discord.FFmpegOpusAudio(song, **self.ffmpeg_options)
 
-        self.now_playing[channel.guild.id] = q_ele
+        self.now_playing[channel.guild.id] = m_info
         self.voice_clients[channel.guild.id].play(player, after=lambda e: asyncio.run_coroutine_threadsafe(self.play_next(channel), self.client.loop))
 
 
@@ -195,14 +196,14 @@ class MusicCog(commands.Cog):
                     return
             
 
-            q_ele = await self.get_youtube_info(url)
+            m_info = await self.get_youtube_info(url)
             
-            self.queues[interaction.guild_id].append(q_ele)
+            self.queues[interaction.guild_id].append(m_info)
 
-            embed = discord.Embed(title=q_ele.title, colour=discord.Colour.brand_red(), url=q_ele.original_url)
-            embed.set_thumbnail(url=q_ele.thumbnail)
+            embed = discord.Embed(title=m_info.title, colour=discord.Colour.brand_red(), url=m_info.original_url)
+            embed.set_thumbnail(url=m_info.thumbnail)
             embed.set_author(name="대기열에 추가 완료!")
-            embed.add_field(name="영상 길이", value=f"{q_ele.duration//60:02}:{q_ele.duration%60:02}")
+            embed.add_field(name="영상 길이", value=f"{m_info.duration//60:02}:{m_info.duration%60:02}")
 
             await message.edit(embed=embed)
 
@@ -248,25 +249,18 @@ class MusicCog(commands.Cog):
         app_commands.Choice(name="단일 반복", value=1),
         app_commands.Choice(name="전체 반복", value=2)
     ])
-    async def repeat(self, interaction: discord.Interaction, val: app_commands.Choice[int] = None):
+    async def repeat(self, interaction: discord.Interaction, val: app_commands.Choice[int]):
         if isinstance(interaction.user, discord.User):
             await interaction.response.send_message('개인 메세지에선 지원하지 않습니다.')
             return
         
-        embed = discord.Embed(title="설정 중입니다...", colour=discord.Colour.brand_red())
-        await interaction.response.send_message(embed=embed)
-        message = await interaction.original_response()
-
-        if not val:
-            val = self.repeat_mode.get(interaction.guild_id, 0) + 1
-            if val > 2:
-                val = 0
         self.repeat_mode[interaction.guild_id] = val.value
-
         arr = ["반복 없음", "단일 반복", "전체 반복"]
-        embed.title = "설정 완료"
+        embed = discord.Embed(title="설정 완료", colour=discord.Colour.brand_red())
         embed.add_field(name=arr[self.repeat_mode[interaction.guild_id]], value="")
-        await message.edit(embed=embed)
+        await interaction.response.send_message(embed=embed)
+
+
 
 
 
@@ -276,7 +270,7 @@ class MusicCog(commands.Cog):
             await interaction.response.send_message('개인 메세지에선 지원하지 않습니다.')
             return
         
-        queue: list[queue_element] = self.queues.get(interaction.guild_id, False)
+        queue: list[music_info] = self.queues.get(interaction.guild_id, False)
         if not queue:
             await interaction.response.send_message('대기열에 노래가 없습니다.')
             return
