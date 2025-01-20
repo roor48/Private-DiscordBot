@@ -57,7 +57,7 @@ class MusicCog(commands.Cog):
     @commands.Cog.listener()
     async def on_voice_state_update(self, member: discord.Member, before: discord.VoiceState, after: discord.VoiceState):
         try:
-            voice_client = self.voice_clients.get(member.guild.id, None)
+            voice_client = self.voice_clients.get(member.guild.id)
             if not voice_client:
                 return
             if not before.channel or voice_client.channel.id != before.channel.id:
@@ -110,16 +110,16 @@ class MusicCog(commands.Cog):
         data = await loop.run_in_executor(None, lambda: self.ytdl.extract_info(url, download=False))
 
         return music_info(url,
-                             data.get('url', None), 
-                             data.get('thumbnail', None), 
-                             data.get('title', None), 
-                             data.get('duration', None))
+                             data.get('url'), 
+                             data.get('thumbnail'), 
+                             data.get('title'), 
+                             data.get('duration'))
 
 
     async def play_next(self, channel: discord.TextChannel):
-        music_infos: list[music_info] = self.queues.get(channel.guild.id, None)
+        music_infos = self.queues.get(channel.guild.id)
     
-        now_playing = self.now_playing.get(channel.guild.id, None)
+        now_playing = self.now_playing.get(channel.guild.id)
         if now_playing and channel.guild.id in self.repeat_mode:
             if self.repeat_mode[channel.guild.id] == 1:
                 await self.play_music(now_playing, channel)
@@ -133,7 +133,7 @@ class MusicCog(commands.Cog):
             await self.play_music(m_info, channel)
 
         else: # 더 이상 재생할 노래가 없으면 disconnect
-            voice_client = self.voice_clients.get(channel.guild.id, None)
+            voice_client = self.voice_clients.get(channel.guild.id)
             if voice_client:
                 await voice_client.disconnect()
     
@@ -230,7 +230,7 @@ class MusicCog(commands.Cog):
         await interaction.response.send_message(embed=embed)
         message = await interaction.original_response()
 
-        voice_client: discord.VoiceClient = self.voice_clients.get(interaction.guild_id, None)
+        voice_client = self.voice_clients.get(interaction.guild_id)
         if not voice_client or not (voice_client.is_playing() or voice_client.is_paused()):
             embed.title = "재생 중이 아닙니다."
             await message.edit(embed=embed)
@@ -240,6 +240,30 @@ class MusicCog(commands.Cog):
 
         embed.title = "곡 하나를 건너뛰었습니다!"
         await message.edit(embed=embed)
+
+    @app_commands.command(name="제거", description="대기열에 있는 곡 하나를 제거합니다.")
+    @app_commands.describe(index="\"/대기열\"로 확인한 곡의 번호를 적어주세요.")
+    async def del_music(self, interaction: discord.Interaction, index: int):
+        if isinstance(interaction.user, discord.User):
+            await interaction.response.send_message('개인 메세지에선 지원하지 않습니다.')
+            return
+        
+        queue = self.queues.get(interaction.guild_id)
+        if not queue:
+            await interaction.response.send_message("대기열에 곡이 없습니다.", ephemeral=True)
+            return
+        if index <= 0 or index > len(queue):
+            await interaction.response.send_message("번호가 너무 작거나 큽니다.", ephemeral=True)
+            return
+        index -= 1
+
+        m_info = queue.pop(index)
+
+        embed = discord.Embed(title=m_info.title, colour=discord.Colour.brand_red(), url=m_info.original_url)
+        embed.set_thumbnail(url=m_info.thumbnail)
+        embed.set_author(name="곡 제거 완료")
+        embed.add_field(name="영상 길이", value=f"{m_info.duration//60:02}:{m_info.duration%60:02}")
+        await interaction.response.send_message(embed=embed)
 
 
 
@@ -270,7 +294,7 @@ class MusicCog(commands.Cog):
             await interaction.response.send_message('개인 메세지에선 지원하지 않습니다.')
             return
         
-        queue: list[music_info] = self.queues.get(interaction.guild_id, False)
+        queue = self.queues.get(interaction.guild_id)
         if not queue:
             await interaction.response.send_message('대기열에 노래가 없습니다.')
             return
@@ -298,6 +322,19 @@ class MusicCog(commands.Cog):
             print(f'{type(e)} Has Been Occurred: {e}')
             embed = discord.Embed(title=f"{type(e)} 오류발생", colour=discord.Colour.brand_red())
             await message.edit(embed=embed)
+
+
+
+    @app_commands.command(name="대기열_제거", description="대기열 제거")
+    async def clear_queue(self, interaction: discord.Interaction):
+        if isinstance(interaction.user, discord.User):
+            await interaction.response.send_message('개인 메세지에선 지원하지 않습니다.')
+            return
+        
+        if interaction.guild_id in self.queues:
+            self.queues[interaction.guild_id].clear()
+
+        await interaction.response.send_message('대기열 제거 완료!')
 
 
 
@@ -342,19 +379,6 @@ class MusicCog(commands.Cog):
 
 
 
-    @app_commands.command(name="대기열_제거", description="대기열 제거")
-    async def clear_queue(self, interaction: discord.Interaction):
-        if isinstance(interaction.user, discord.User):
-            await interaction.response.send_message('개인 메세지에선 지원하지 않습니다.')
-            return
-        
-        if interaction.guild_id in self.queues:
-            self.queues[interaction.guild_id].clear()
-
-        await interaction.response.send_message('대기열 제거 완료!')
-
-
-
 
     @app_commands.command(name="나가기", description="봇 내보내기")
     async def leave(self, interaction: discord.Interaction):
@@ -362,7 +386,7 @@ class MusicCog(commands.Cog):
             await interaction.response.send_message('개인 메세지에선 지원하지 않습니다.')
             return
         
-        voice_client = self.voice_clients.get(interaction.guild_id, False)
+        voice_client = self.voice_clients.get(interaction.guild_id)
         if voice_client:
             await interaction.response.send_message('봇을 내보냈습니다.')
             try: # disconnect는 되지만 timeout뜸
@@ -381,7 +405,7 @@ class MusicCog(commands.Cog):
         print(len(self.voice_clients))
         print(len(self.queues))
 
-        voice_client: discord.VoiceClient = self.voice_clients.get(interaction.guild_id, None)
+        voice_client = self.voice_clients.get(interaction.guild_id)
         if voice_client:
             print('is_paused:', voice_client.is_paused())
             print('is_playing:', voice_client.is_playing())
