@@ -77,7 +77,7 @@ class MusicCog(commands.Cog):
             print(f'{type(e)} Has Been Occurred: {e}')
 
     def clear_guild_dict(self, guild_id: int):
-        print('deleting...')
+        print('deleting Music: ' + guild_id)
         if guild_id in self.voice_clients:
             del self.voice_clients[guild_id]
 
@@ -89,6 +89,7 @@ class MusicCog(commands.Cog):
 
         if guild_id in self.repeat_mode:
             del self.repeat_mode[guild_id]
+        print ('deleted Music!')
 
     def search_youtube(self, url: str):
         query_string = urllib.parse.urlencode({
