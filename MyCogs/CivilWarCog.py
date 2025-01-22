@@ -157,7 +157,7 @@ class CivilWarCog(commands.Cog):
             await interaction.response.send_message("서버 오류가 발생했습니다.", ephemeral=True)
 
     async def deleteCreateDict(self, user_id: int, message_id: int):
-        print('deleting CivilWar: ' + user_id)
+        print(f'deleting CivilWar: {user_id}')
         try:
             await self.createdWarUserId[user_id]["message"].edit(content="이 내전은 종료되었습니다.")
             await self.createdWarUserId[user_id]["message"].unpin(reason="내전이 종료되었습니다.")

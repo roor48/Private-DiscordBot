@@ -77,7 +77,7 @@ class MusicCog(commands.Cog):
             print(f'{type(e)} Has Been Occurred: {e}')
 
     def clear_guild_dict(self, guild_id: int):
-        print('deleting Music: ' + guild_id)
+        print(f'deleting Music: {guild_id}')
         if guild_id in self.voice_clients:
             del self.voice_clients[guild_id]
 
