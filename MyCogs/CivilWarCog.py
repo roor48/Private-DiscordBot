@@ -58,7 +58,7 @@ class CivilWarCog(commands.Cog):
         if max_player < 0:
             max_player = 0
 
-        await interaction.response.send_message(f"{message}\n`최대인원: {'no_limits' if max_player<=0 else max_player}` `팀 수: {team_count}`\n-# ✅반응을 눌러 내전에 참가하세요!")
+        await interaction.response.send_message(f"{message}\n`최대인원: {'no_limits' if max_player<=0 else max_player}` `팀 수: {team_count}`\n-# ✅반응을 눌러 내전에 참가하세요!", allowed_mentions=discord.AllowedMentions.all())
         msg = await interaction.original_response()
         await msg.add_reaction("✅")
         await msg.pin(reason="내전이 생성되었습니다.")
