@@ -2,7 +2,7 @@ from traceback import print_exc
 import discord
 from discord.ext import commands
 from discord import app_commands
-from yt_dlp import YoutubeDL, utils
+from yt_dlp import YoutubeDL
 import asyncio
 import urllib.parse, urllib.request
 import re

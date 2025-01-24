@@ -36,7 +36,8 @@ class MyClient(commands.Bot):
         print('봇 종료 완료!')
 
     async def cleanup(self):
-        await self.get_cog("CivilWarCog").on_close()
+        # await self.get_cog("CivilWarCog").on_close()
+        ...
 
 
 # 프로그램 시작
