@@ -5,12 +5,16 @@ import random
 
 from .errors import handle_error
 
+class CustomInt(int):
+    def __str__(self):
+        return super().__str__() if self > 0 else "inf"
+
 class CivilView(discord.ui.View):
     def __init__(self, *, timeout: float, author: discord.Member, thread: discord.Thread, max_player: CustomInt, team_count: int):
         super().__init__(timeout=timeout)
         self.__author: discord.Member = author
         self.__thread: discord.Thread = thread
-        self.__max_player: int = max_player
+        self.__max_player: CustomInt = max_player
         self.__team_count: int = team_count
 
         self.__game_count: int = 1
@@ -33,10 +37,12 @@ class CivilView(discord.ui.View):
 
         try:
             embed = message.embeds[0]
-            embed.set_field_at(1, name='인원 리스트', value=' '.join(f'`{member.display_name}`' for member in self.__joined), inline=False)
+            embed.set_field_at(0, name='인원 수', value=f'`{len(self.__joined)} / {self.__max_player}`')
+            embed.set_field_at(2, name='인원 리스트', value=' '.join(f'`{member.display_name}`' for member in self.__joined), inline=False)
         except:
             embed = discord.Embed(title=message.content, colour=discord.Colour.random())
-            embed.add_field(name='설정', value=f'`최대 인원: {self.__max_player if self.__max_player>0 else "inf"}` `최대 팀 수: {self.__team_count}`')
+            embed.add_field(name='인원 수', value=f'`{len(self.__joined)} / {self.__max_player}`')
+            embed.add_field(name='설정', value=f'`최대 인원: {self.__max_player}` `최대 팀 수: {self.__team_count}`')
             embed.add_field(name='인원 리스트', value=' '.join(f'`{member.display_name}`' for member in self.__joined), inline=False)
             embed.set_footer(text='24시간 이후에 만료됩니다.')
 
@@ -55,10 +61,12 @@ class CivilView(discord.ui.View):
         message = interaction.message
         try:
             embed = message.embeds[0]
-            embed.set_field_at(1, name='인원 리스트', value=' '.join(f'`{member.display_name}`' for member in self.__joined), inline=False)
+            embed.set_field_at(0, name='인원 수', value=f'`{len(self.__joined)} / {self.__max_player}`')
+            embed.set_field_at(2, name='인원 리스트', value=' '.join(f'`{member.display_name}`' for member in self.__joined), inline=False)
         except:
             embed = discord.Embed(title=message.content, colour=discord.Colour.random())
-            embed.add_field(name='설정', value=f'`최대 인원: {self.__max_player if self.__max_player>0 else "inf"}` `최대 팀 수: {self.__team_count}`')
+            embed.add_field(name='인원 수', value=f'`{len(self.__joined)} / {self.__max_player}`')
+            embed.add_field(name='설정', value=f'`최대 인원: {self.__max_player}` `최대 팀 수: {self.__team_count}`')
             embed.add_field(name='인원 리스트', value=' '.join(f'`{member.display_name}`' for member in self.__joined), inline=False)
             embed.set_footer(text='24시간 이후에 만료됩니다.')
 
@@ -129,7 +137,8 @@ class CivilView(discord.ui.View):
             embed = message.embeds[0]
         except:
             embed = discord.Embed(title=message.content, colour=discord.Colour.random())
-            embed.add_field(name='설정', value=f'`최대 인원: {self.__max_player if self.__max_player>0 else "inf"}` `최대 팀 수: {self.__team_count}`')
+            embed.add_field(name='인원 수', value=f'`{len(self.__joined)} / {self.__max_player}`')
+            embed.add_field(name='설정', value=f'`최대 인원: {self.__max_player}` `최대 팀 수: {self.__team_count}`')
             embed.add_field(name='인원 리스트', value=' '.join(f'`{member.display_name}`' for member in self.__joined), inline=False)
 
         embed.set_footer(text='만료되었습니다.')
@@ -142,13 +151,13 @@ class CivilWarCog(commands.Cog):
     def __init__(self, client):
         self.client: commands.Bot = client
 
-    async def cog_app_command_error(self, interaction: discord.Interaction, error: discord.app_commands.AppCommandError):
+    async def cog_app_command_error(self, interaction: discord.Interaction, error: app_commands.AppCommandError):
         await handle_error(interaction, error)
 
 
     @app_commands.command(name="내전생성", description="내전 인원을 모읍니다.")
-    @app_commands.describe(message="내용을 입력해주세요!", max_player="최대 인원입니다.", team_count="팀 수 입니다.")
-    async def createCivilWar(self, interaction: discord.Interaction, message:str, max_player:int = 0, team_count:int = 2):
+    @app_commands.describe(message="내용을 입력해주세요!", max_player="최대 인원입니다  (미지정 시 무한)", team_count="팀 수 입니다  (미지정 시 2팀)")
+    async def createCivilWar(self, interaction: discord.Interaction, message:str, max_player:app_commands.Range[int, 1] = 0, team_count:app_commands.Range[int, 1, 25] = 2):
         if isinstance(interaction.user, discord.User):
             await interaction.response.send_message('개인 메세지에선 지원하지 않습니다.')
             return
@@ -156,8 +165,10 @@ class CivilWarCog(commands.Cog):
             await interaction.response.send_message('스레드 밖에서 사용해 주세요.', ephemeral=True)
             return
 
+        max_player = CustomInt(max_player)
         embed = discord.Embed(title='내전', colour=discord.Colour.random())
-        embed.add_field(name='설정', value=f'`최대 인원: {max_player if max_player>0 else "inf"}` `최대 팀 수: {team_count}`')
+        embed.add_field(name='인원 수', value=f'`0 / {max_player}`')
+        embed.add_field(name='설정', value=f'`최대 인원: {max_player}` `최대 팀 수: {team_count}`')
         embed.add_field(name='인원 리스트', value='', inline=False)
         embed.set_footer(text='24시간 이후에 만료됩니다.')
 

@@ -57,8 +57,8 @@ class MusicCog(commands.Cog):
         self.ffmpeg_options: dict = {'before_options': '-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5','options': '-vn -filter:a "volume=0.25"'}
 
 
-    async def cog_app_command_error(self, interaction: discord.Interaction, error: discord.app_commands.AppCommandError):
-        if isinstance(error, discord.app_commands.CommandInvokeError):
+    async def cog_app_command_error(self, interaction: discord.Interaction, error: app_commands.AppCommandError):
+        if isinstance(error, app_commands.CommandInvokeError):
             if isinstance(error.original, asyncio.exceptions.TimeoutError):
                 self.clear_guild_dict(interaction.guild_id)
         await handle_error(interaction, error)
