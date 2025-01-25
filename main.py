@@ -19,7 +19,6 @@ class MyClient(commands.Bot):
 
         # SlashCommands Cog 등록
         await self.add_cog(CivilWarCog(self)) # 내전 관련 Cog
-        await self.add_cog(MessageEventCog(self)) # 메세지 관련 Cog
         await self.add_cog(SimpleCommandsCog(self)) # 간단한 명령어 Cog
         await self.add_cog(MusicCog(self)) # 음악 관련 Cog
 
