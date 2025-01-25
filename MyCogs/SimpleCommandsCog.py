@@ -19,21 +19,3 @@ class SimpleCommandsCog(commands.Cog):
     async def ping(self, interaction: discord.Interaction):
         await interaction.response.send_message(f"pong! {self.client.latency * 1000:.2f}ms", ephemeral=True)
 
-
-    @app_commands.command(name="고정된메시지삭제", description="봇이 보낸 메시지를 고정 해제합니다.")
-    async def removeBotPinned(self, interaction: discord.Interaction):
-        await interaction.response.send_message("고정 해제 중입니다...", ephemeral=True)
-        msg = await interaction.original_response()
-
-        pinned_messages = await interaction.channel.pins()
-
-        if not pinned_messages:
-            await msg.edit(content="고정된 메시지가 없습니다.")
-            return
-        
-        
-        for msg in pinned_messages:
-            if msg.author == self.client.user:
-                await msg.unpin(reason="봇이 메시지를 고정 해제했습니다.")
-
-        await msg.edit(content="봇이 보낸 메시지 중 고정된 메시지를 전부 고정 해제했습니다.")
