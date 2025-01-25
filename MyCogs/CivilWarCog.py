@@ -141,6 +141,9 @@ class CivilWarCog(commands.Cog):
     @app_commands.command(name="내전생성", description="내전 인원을 모읍니다.")
     @app_commands.describe(message="내용을 입력해주세요!", max_player="최대 인원입니다.", team_count="팀 수 입니다.")
     async def createCivilWar(self, interaction: discord.Interaction, message:str, max_player:int = 0, team_count:int = 2):
+        if isinstance(interaction.user, discord.User):
+            await interaction.response.send_message('개인 메세지에선 지원하지 않습니다.')
+            return
         if isinstance(interaction.channel, discord.Thread):
             await interaction.response.send_message('스레드 밖에서 사용해 주세요.', ephemeral=True)
             return
