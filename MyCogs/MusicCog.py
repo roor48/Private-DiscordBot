@@ -8,6 +8,7 @@ import urllib.parse, urllib.request
 import re
 
 from .errors import handle_error
+from .AdminManager import is_admin
 
 class music_info:
     def __init__(self, original_url: str, url: str, thumbnail: str, title: str, duration: int):
@@ -397,7 +398,7 @@ class MusicCog(commands.Cog):
 
     @app_commands.command(name="print-music", description="딕셔너리 출력")
     async def test(self, interaction: discord.Interaction):
-        if interaction.user.id != 468316922052608000:
+        if not is_admin(interaction.user.id):
             await interaction.response.send_message("이 기능은 관리자만 사용할 수 있습니다.", ephemeral=True)
             return
 

@@ -4,6 +4,7 @@ from discord import app_commands
 import random
 
 from .errors import handle_error
+from .AdminManager import is_admin
 
 class CustomInt(int):
     def __str__(self):
@@ -111,7 +112,7 @@ class CivilView(discord.ui.View):
 
     @discord.ui.button(label="내전 종료", style=discord.ButtonStyle.danger)
     async def delete_button(self, interaction: discord.Interaction, button: discord.ui.Button):
-        if self.__author != interaction.user:
+        if not is_admin(interaction.user.id) and self.__author != interaction.user:
             await interaction.response.send_message(content='이 내전을 생성한 사람만 종료가 가능합니다.', ephemeral=True)
             return
 
