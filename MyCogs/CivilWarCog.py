@@ -6,10 +6,9 @@ import random
 from .errors import handle_error
 
 class CivilView(discord.ui.View):
-    def __init__(self, *, timeout: float = 180, author: discord.Member, message: discord.Message, thread: discord.Thread, max_player:int, team_count:int):
+    def __init__(self, *, timeout: float, author: discord.Member, thread: discord.Thread, max_player: CustomInt, team_count: int):
         super().__init__(timeout=timeout)
-        self.__author: discord.User | discord.Member = author
-        self.__message: discord.Message = message
+        self.__author: discord.Member = author
         self.__thread: discord.Thread = thread
         self.__max_player: int = max_player
         self.__team_count: int = team_count
@@ -23,6 +22,7 @@ class CivilView(discord.ui.View):
     async def join_button(self, interaction: discord.Interaction, button: discord.ui.Button):
         await interaction.response.defer()
 
+        message = interaction.message
         if interaction.user in self.__joined:
             return
         if self.__max_player > 0 and len(self.__joined) >= self.__max_player:
@@ -32,16 +32,16 @@ class CivilView(discord.ui.View):
         self.__joined.append(interaction.user)
 
         try:
-            embed = self.__message.embeds[0]
+            embed = message.embeds[0]
             embed.set_field_at(1, name='인원 리스트', value=' '.join(f'`{member.display_name}`' for member in self.__joined), inline=False)
         except:
-            embed = discord.Embed(title=self.__message.content, colour=discord.Colour.random())
+            embed = discord.Embed(title=message.content, colour=discord.Colour.random())
             embed.add_field(name='설정', value=f'`최대 인원: {self.__max_player if self.__max_player>0 else "inf"}` `최대 팀 수: {self.__team_count}`')
             embed.add_field(name='인원 리스트', value=' '.join(f'`{member.display_name}`' for member in self.__joined), inline=False)
             embed.set_footer(text='24시간 이후에 만료됩니다.')
 
 
-        await self.__message.edit(embed=embed, allowed_mentions=discord.AllowedMentions.all())
+        await message.edit(embed=embed, allowed_mentions=discord.AllowedMentions.all())
 
 
     @discord.ui.button(label="퇴장", style=discord.ButtonStyle.gray)
@@ -52,17 +52,18 @@ class CivilView(discord.ui.View):
         
         self.__joined.remove(interaction.user)
 
+        message = interaction.message
         try:
-            embed = self.__message.embeds[0]
+            embed = message.embeds[0]
             embed.set_field_at(1, name='인원 리스트', value=' '.join(f'`{member.display_name}`' for member in self.__joined), inline=False)
         except:
-            embed = discord.Embed(title=self.__message.content, colour=discord.Colour.random())
+            embed = discord.Embed(title=message.content, colour=discord.Colour.random())
             embed.add_field(name='설정', value=f'`최대 인원: {self.__max_player if self.__max_player>0 else "inf"}` `최대 팀 수: {self.__team_count}`')
             embed.add_field(name='인원 리스트', value=' '.join(f'`{member.display_name}`' for member in self.__joined), inline=False)
             embed.set_footer(text='24시간 이후에 만료됩니다.')
 
 
-        await self.__message.edit(embed=embed, allowed_mentions=discord.AllowedMentions.all())
+        await message.edit(embed=embed, allowed_mentions=discord.AllowedMentions.all())
 
 
     @discord.ui.button(label="팀 뽑기", style=discord.ButtonStyle.blurple)
@@ -94,7 +95,7 @@ class CivilView(discord.ui.View):
         try:
             msg = await self.__thread.send(content=content, embed=embed, allowed_mentions=discord.AllowedMentions.all())
         except discord.errors.NotFound:
-            self.__thread = await self.__message.create_thread(name='내-전', auto_archive_duration=1440, reason='내전 생성')
+            self.__thread = await interaction.message.create_thread(name='팀 결과', auto_archive_duration=1440, reason='내전 생성')
             msg = await self.__thread.send(content=content, embed=embed, allowed_mentions=discord.AllowedMentions.all())
 
         await msg.edit(content=None)
@@ -109,30 +110,32 @@ class CivilView(discord.ui.View):
         await interaction.response.defer()
 
         self.stop()
-        await self.expiration_message()
+        await self.expiration_message(interaction.message)
 
 
     async def on_timeout(self):
         await self.expiration_message()
 
 
-    async def expiration_message(self):
+    async def expiration_message(self, message: discord.Message = None):
         try:
             await self.__thread.delete(reason='만료')
         except: ...
 
+        if not message:
+            return
+
         try:
-            embed = self.__message.embeds[0]
+            embed = message.embeds[0]
         except:
-            embed = discord.Embed(title=self.__message.content, colour=discord.Colour.random())
+            embed = discord.Embed(title=message.content, colour=discord.Colour.random())
             embed.add_field(name='설정', value=f'`최대 인원: {self.__max_player if self.__max_player>0 else "inf"}` `최대 팀 수: {self.__team_count}`')
             embed.add_field(name='인원 리스트', value=' '.join(f'`{member.display_name}`' for member in self.__joined), inline=False)
 
         embed.set_footer(text='만료되었습니다.')
-        for child in self.children:
-            self.remove_item(child)
-        await self.__message.edit(embed=embed, view=self)
-        await self.__message.unpin(reason='내전 만료')
+        self.clear_items()
+        await message.edit(embed=embed, view=self)
+
 
 
 class CivilWarCog(commands.Cog):
@@ -163,7 +166,7 @@ class CivilWarCog(commands.Cog):
 
         thread = await msg.create_thread(name='팀 결과', auto_archive_duration=1440, reason='내전 생성')
 
-        view = CivilView(timeout=86400, author=interaction.user, message=msg, thread=thread, max_player=max_player, team_count=team_count)
+        view = CivilView(timeout=86400, author=interaction.user, thread=thread, max_player=max_player, team_count=team_count)
 
         await msg.edit(view=view)
-        await msg.pin(reason='내전 생성')
+
