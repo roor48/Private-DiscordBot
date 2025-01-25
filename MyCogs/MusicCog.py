@@ -7,6 +7,8 @@ import asyncio
 import urllib.parse, urllib.request
 import re
 
+from .errors import handle_error
+
 class music_info:
     def __init__(self, original_url: str, url: str, thumbnail: str, title: str, duration: int):
         self.original_url = original_url
@@ -54,15 +56,26 @@ class MusicCog(commands.Cog):
 
         self.ffmpeg_options: dict = {'before_options': '-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5','options': '-vn -filter:a "volume=0.25"'}
 
+
+    async def cog_app_command_error(self, interaction: discord.Interaction, error: discord.app_commands.AppCommandError):
+        if isinstance(error, discord.app_commands.CommandInvokeError):
+            if isinstance(error.original, asyncio.exceptions.TimeoutError):
+                self.clear_guild_dict(interaction.guild_id)
+        await handle_error(interaction, error)
+
     @commands.Cog.listener()
     async def on_voice_state_update(self, member: discord.Member, before: discord.VoiceState, after: discord.VoiceState):
-        try:
-            voice_client = self.voice_clients.get(member.guild.id)
-            if not voice_client:
-                return
-            if not before.channel or voice_client.channel.id != before.channel.id:
-                return
+        if not before.channel:
+            return
 
+        voice_client = self.voice_clients.get(member.guild.id)
+        if not voice_client:
+            return
+
+        if voice_client.channel.id != before.channel.id:
+            return
+
+        try:
             if member.id != self.client.user.id:
                 if all(m.bot for m in before.channel.members):
                     try: # disconnect는 되지만 timeout뜸
@@ -166,10 +179,13 @@ class MusicCog(commands.Cog):
             await interaction.response.send_message('먼저 음성 채팅방에 들어가주세요.', ephemeral=True)
             return
         
+        embed = discord.Embed(title="영상 불러오는 중...", colour=discord.Colour.brand_red())
+        await interaction.response.send_message(embed=embed)
+        message = await interaction.original_response()
 
         if interaction.guild_id not in self.voice_clients:
             self.voice_clients[interaction.guild_id] = None
-            self.voice_clients[interaction.guild_id] = await interaction.user.voice.channel.connect(reconnect=False, self_deaf=True)
+            self.voice_clients[interaction.guild_id] = await interaction.user.voice.channel.connect(reconnect=False, self_deaf=True, timeout=10)
             self.queues[interaction.guild_id] = []
             self.repeat_mode[interaction.guild_id] = 0
             self.now_playing[interaction.guild_id] = None
@@ -183,41 +199,31 @@ class MusicCog(commands.Cog):
             return
 
 
-        embed = discord.Embed(title="영상 불러오는 중...", colour=discord.Colour.brand_red())
-        await interaction.response.send_message(embed=embed)
-        message = await interaction.original_response()
         
-        try:
-            url = url.replace(' ', '')
-            if not is_youtube_link(url):
-                url = self.search_youtube(url)
-                if not url:
-                    embed = discord.Embed(title="검색 결과가 없습니다.", colour=discord.Colour.brand_red())
-                    await message.edit(embed=embed)
-                    return
-            
-
-            m_info = await self.get_youtube_info(url)
-            
-            self.queues[interaction.guild_id].append(m_info)
-
-            embed = discord.Embed(title=m_info.title, colour=discord.Colour.brand_red(), url=m_info.original_url)
-            embed.set_thumbnail(url=m_info.thumbnail)
-            embed.set_author(name="대기열에 추가 완료!")
-            embed.add_field(name="영상 길이", value=f"{m_info.duration//60:02}:{m_info.duration%60:02}")
-
-            await message.edit(embed=embed)
-
-            if self.voice_clients[interaction.guild_id].is_paused():
+        url = url.replace(' ', '')
+        if not is_youtube_link(url):
+            url = self.search_youtube(url)
+            if not url:
+                embed = discord.Embed(title="검색 결과가 없습니다.", colour=discord.Colour.brand_red())
+                await message.edit(embed=embed)
                 return
-            if not self.voice_clients[interaction.guild_id].is_playing():
-                await self.play_next(message.channel)
+        
 
-        except Exception as e:
-            print_exc()
-            print(f'{type(e)} Has Been Occurred: {e}')
-            embed = discord.Embed(title=f"{type(e)} 오류발생", colour=discord.Colour.brand_red())
-            await message.edit(embed=embed)
+        m_info = await self.get_youtube_info(url)
+        
+        self.queues[interaction.guild_id].append(m_info)
+
+        embed = discord.Embed(title=m_info.title, colour=discord.Colour.brand_red(), url=m_info.original_url)
+        embed.set_thumbnail(url=m_info.thumbnail)
+        embed.set_author(name="대기열에 추가 완료!")
+        embed.add_field(name="영상 길이", value=f"{m_info.duration//60:02}:{m_info.duration%60:02}")
+
+        await message.edit(embed=embed)
+
+        if self.voice_clients[interaction.guild_id].is_paused():
+            return
+        if not self.voice_clients[interaction.guild_id].is_playing():
+            await self.play_next(message.channel)
 
 
 
@@ -304,25 +310,18 @@ class MusicCog(commands.Cog):
         await interaction.response.send_message(embed=embed)
         message = await interaction.original_response()
 
-        try:
-            embed.title = "대기열"
-            titles = []
-            durations = []
+        embed.title = "대기열"
+        titles = []
+        durations = []
 
-            for i in range(min(10, len(queue))):
-                titles.append(f'{i+1}. {queue[i].title}')
-                durations.append(queue[i].duration)
+        for i in range(min(10, len(queue))):
+            titles.append(f'{i+1}. {queue[i].title}')
+            durations.append(queue[i].duration)
 
-            for i in range(len(titles)):
-                embed.add_field(name=titles[i], value=f'[{durations[i]//60:02}:{durations[i]%60:02}]({queue[i].original_url})', inline=False)
+        for i in range(len(titles)):
+            embed.add_field(name=titles[i], value=f'[{durations[i]//60:02}:{durations[i]%60:02}]({queue[i].original_url})', inline=False)
 
-            await message.edit(embed=embed)
-        
-        except Exception as e:
-            print_exc()
-            print(f'{type(e)} Has Been Occurred: {e}')
-            embed = discord.Embed(title=f"{type(e)} 오류발생", colour=discord.Colour.brand_red())
-            await message.edit(embed=embed)
+        await message.edit(embed=embed)
 
 
 

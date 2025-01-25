@@ -3,6 +3,7 @@ from discord.ext import commands
 from discord import app_commands
 import random
 
+from .errors import handle_error
 
 class CivilView(discord.ui.View):
     def __init__(self, *, timeout: float = 180, author: discord.Member, message: discord.Message, thread: discord.Thread, max_player:int, team_count:int):
@@ -137,6 +138,10 @@ class CivilView(discord.ui.View):
 class CivilWarCog(commands.Cog):
     def __init__(self, client):
         self.client: commands.Bot = client
+
+    async def cog_app_command_error(self, interaction: discord.Interaction, error: discord.app_commands.AppCommandError):
+        await handle_error(interaction, error)
+
 
     @app_commands.command(name="내전생성", description="내전 인원을 모읍니다.")
     @app_commands.describe(message="내용을 입력해주세요!", max_player="최대 인원입니다.", team_count="팀 수 입니다.")
