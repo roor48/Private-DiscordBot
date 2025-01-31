@@ -396,8 +396,8 @@ class MusicCog(commands.Cog):
         else:
             await interaction.response.send_message('봇이 채널에 없습니다.')
 
-    @app_commands.command(name="print-music", description="딕셔너리 출력")
-    async def test(self, interaction: discord.Interaction):
+    @app_commands.command(name="print-music")
+    async def print_music(self, interaction: discord.Interaction):
         if not is_admin(interaction.user.id):
             await interaction.response.send_message("이 기능은 관리자만 사용할 수 있습니다.", ephemeral=True)
             return

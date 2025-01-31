@@ -130,6 +130,7 @@ class CivilView(discord.ui.View):
             await self.__thread.delete(reason='만료')
         except: ...
 
+        CivilWarCog.civil_count -= 1
         if not message:
             return
 
@@ -148,6 +149,7 @@ class CivilView(discord.ui.View):
 
 
 class CivilWarCog(commands.Cog):
+    civil_count: int = 0
     def __init__(self, client):
         self.client: commands.Bot = client
 
@@ -180,4 +182,13 @@ class CivilWarCog(commands.Cog):
         view = CivilView(timeout=86400, author=interaction.user, thread=thread, max_player=max_player, team_count=team_count)
 
         await msg.edit(view=view)
+        print('Created a CivilWar!')
+        CivilWarCog.civil_count += 1
 
+    @app_commands.command(name="print-civil")
+    async def print_civil(self, interaction: discord.Interaction):
+        if not is_admin(interaction.user.id):
+            await interaction.response.send_message("이 기능은 관리자만 사용할 수 있습니다.", ephemeral=True)
+
+        await interaction.response.send_message(content=CivilWarCog.civil_count)
+        print(CivilWarCog.civil_count)
