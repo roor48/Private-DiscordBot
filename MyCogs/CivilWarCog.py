@@ -31,7 +31,6 @@ class CivilView(discord.ui.View):
         if interaction.user in self.__joined:
             return
         if self.__max_player > 0 and len(self.__joined) >= self.__max_player:
-            await interaction.user.send(f"{interaction.user.display_name}님의 반응 삭제됨\n`이유: 님 낄 자리 없음ㅋㅋ`")
             return
 
         self.__joined.append(interaction.user)
