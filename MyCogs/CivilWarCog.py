@@ -11,10 +11,10 @@ class CustomInt(int):
         return super().__str__() if self > 0 else "inf"
 
 class CivilView(discord.ui.View):
-    def __init__(self, *, timeout: float, author: discord.Member, thread: discord.Thread, max_player: CustomInt, team_count: int):
+    def __init__(self, *, timeout: float, author: discord.Member, message: discord.InteractionMessage, max_player: CustomInt, team_count: int):
         super().__init__(timeout=timeout)
         self.__author: discord.Member = author
-        self.__thread: discord.Thread = thread
+        self.__message: discord.InteractionMessage = message
         self.__max_player: CustomInt = max_player
         self.__team_count: int = team_count
 
@@ -101,10 +101,10 @@ class CivilView(discord.ui.View):
             embed.add_field(name=f'팀 {i}', value=' '.join(team), inline=False)
 
         try:
-            msg = await self.__thread.send(content=content, embed=embed, allowed_mentions=discord.AllowedMentions.all())
+            msg = await self.__message.thread.send(content=content, embed=embed, allowed_mentions=discord.AllowedMentions.all())
         except discord.errors.NotFound:
-            self.__thread = await interaction.message.create_thread(name='팀 결과', auto_archive_duration=1440, reason='내전 생성')
-            msg = await self.__thread.send(content=content, embed=embed, allowed_mentions=discord.AllowedMentions.all())
+            self.__message.thread = await interaction.message.create_thread(name='팀 결과', auto_archive_duration=1440, reason='내전 생성')
+            msg = await self.__message.thread.send(content=content, embed=embed, allowed_mentions=discord.AllowedMentions.all())
 
         await msg.edit(content=None)
 
@@ -122,17 +122,18 @@ class CivilView(discord.ui.View):
 
 
     async def on_timeout(self):
+        print('TIMEOUT VIEW')
         await self.expiration_message()
 
 
-    async def expiration_message(self, message: discord.Message = None):
+    async def expiration_message(self, message: discord.InteractionMessage = None):
         try:
-            await self.__thread.delete(reason='만료')
+            await self.__message.thread.delete(reason='만료')
         except: ...
 
         CivilWarCog.civil_count -= 1
         if not message:
-            return
+            message: discord.Message = await self.__message.channel.fetch_message(self.__message.id)
 
         try:
             embed = message.embeds[0]
@@ -177,9 +178,9 @@ class CivilWarCog(commands.Cog):
         await interaction.response.send_message(content=message, embed=embed, allowed_mentions=discord.AllowedMentions.all())
         msg = await interaction.original_response()
 
-        thread = await msg.create_thread(name='팀 결과', auto_archive_duration=1440, reason='내전 생성')
+        await msg.create_thread(name='팀 결과', auto_archive_duration=1440, reason='내전 생성')
 
-        view = CivilView(timeout=86400, author=interaction.user, thread=thread, max_player=max_player, team_count=team_count)
+        view = CivilView(timeout=86400, author=interaction.user, message=msg, max_player=max_player, team_count=team_count)
 
         await msg.edit(view=view)
         print('Created a CivilWar!')
