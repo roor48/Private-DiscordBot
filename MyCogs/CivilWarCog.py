@@ -13,12 +13,12 @@ class CustomInt(int):
 class CivilView(discord.ui.View):
     def __init__(self, *, timeout: float, author: discord.Member, content: str, max_player: int, team_count: int):
         super().__init__(timeout=timeout)
+        self.content: str = content
         self.max_player: CustomInt = CustomInt(max_player)
         self.team_count: int = team_count
         self.joined: list[discord.Member] = []
 
         self.__author: discord.Member = author
-        self.__content: str = content
         self.__colour = discord.Colour.random()
 
         self.__game_count: int = 1
@@ -53,7 +53,7 @@ class CivilView(discord.ui.View):
             embed = self.new_embed()
 
 
-        await message.edit(content=self.__content, embed=embed)
+        await message.edit(content=self.content, embed=embed)
 
 
     @discord.ui.button(label="퇴장", style=discord.ButtonStyle.gray)
@@ -73,7 +73,7 @@ class CivilView(discord.ui.View):
             embed = self.new_embed()
 
 
-        await message.edit(content=self.__content, embed=embed)
+        await message.edit(content=self.content, embed=embed)
 
 
     @discord.ui.button(label="팀 뽑기", style=discord.ButtonStyle.blurple)
@@ -129,10 +129,10 @@ class CivilView(discord.ui.View):
             await interaction.response.send_message(content='이 내전을 생성한 사람만 종료가 가능합니다.', ephemeral=True)
             return
 
-        await interaction.response.defer()
+        # await interaction.response.defer()
+        await interaction.response.send_modal(DeleteModal(view=self))
 
-        self.stop()
-        await self.expiration_message(interaction.message)
+        # await self.expiration_message(interaction.message)
 
 
     async def on_timeout(self):
@@ -154,8 +154,9 @@ class CivilView(discord.ui.View):
         embed.set_footer(text='만료되었습니다.')
 
         self.clear_items()
-        await message.edit(content=self.__content, embed=embed, view=self)
-
+        self.stop()
+        await message.edit(content=self.content, embed=embed, view=self)
+        
 
 
 class EditModal(discord.ui.Modal):
@@ -164,14 +165,14 @@ class EditModal(discord.ui.Modal):
         self.message = message
         self.view = view
 
-    content = discord.ui.TextInput(label='메시지')
-    max_player = discord.ui.TextInput(label='최대인원', placeholder="숫자 (no limit)")
-    team_count = discord.ui.TextInput(label='팀 수', placeholder="숫자 (1~25)")
+        self.add_item(discord.ui.TextInput(label='메시지', default=view.content))
+        self.add_item(discord.ui.TextInput(label='최대인원', placeholder="숫자 (no limit)", default=str(int(view.max_player))))
+        self.add_item(discord.ui.TextInput(label='팀 수', placeholder="숫자 (1~25)", default=view.team_count))
 
 
     async def on_submit(self, interaction: discord.Interaction):
-        max_player = str(self.max_player)
-        team_count = str(self.team_count)
+        max_player = str(self.children[1])
+        team_count = str(self.children[2])
         if not max_player.isdigit() or not team_count.isdigit():
             await interaction.response.send_message("숫자가 아닌 문자가 들어갔습니다.", ephemeral=True)
             return
@@ -195,7 +196,19 @@ class EditModal(discord.ui.Modal):
 
         embed = self.view.new_embed()
 
-        await self.message.edit(content=self.content, embed=embed, view=self.view, allowed_mentions=discord.AllowedMentions.all())
+        await self.message.edit(content=self.children[0], embed=embed, view=self.view, allowed_mentions=discord.AllowedMentions.all())
+
+
+class DeleteModal(discord.ui.Modal):
+    def __init__(self, *, view: CivilView):
+        super().__init__(title='내전종료')
+        self.view = view
+        self.add_item(discord.ui.TextInput(label='확인메시지', default='종료하겠습니다.', required=False))
+    
+    async def on_submit(self, interaction: discord.Interaction):
+        await interaction.response.defer()
+
+        await self.view.expiration_message(interaction.message)
 
 
 
