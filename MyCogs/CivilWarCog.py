@@ -11,12 +11,15 @@ class CustomInt(int):
         return super().__str__() if self > 0 else "inf"
 
 class CivilView(discord.ui.View):
-    def __init__(self, *, timeout: float, author: discord.Member, content: str, max_player: int, team_count: int):
+    def __init__(self, *, timeout: float, author: discord.Member, content: str, max_player: int, team_count: int, channel: discord.TextChannel, message_id: int):
         super().__init__(timeout=timeout)
         self.content: str = content
         self.max_player: CustomInt = CustomInt(max_player)
         self.team_count: int = team_count
         self.joined: list[discord.Member] = []
+
+        self.__channel: discord.TextChannel = channel
+        self.__message_id: int = message_id
 
         self.__author: discord.Member = author
         self.__colour = discord.Colour.random()
@@ -112,7 +115,7 @@ class CivilView(discord.ui.View):
         await msg.edit(content=None)
 
 
-    @discord.ui.button(label="수정")
+    @discord.ui.button(label="수정", style=discord.ButtonStyle.blurple)
     async def edit_civil(self, interaction: discord.Interaction, button: discord.ui.Button):
         if not is_admin(interaction.user.id) and self.__author != interaction.user:
             await interaction.response.send_message(content='이 내전을 생성한 사람만 수정이 가능합니다.', ephemeral=True)
@@ -129,22 +132,18 @@ class CivilView(discord.ui.View):
             await interaction.response.send_message(content='이 내전을 생성한 사람만 종료가 가능합니다.', ephemeral=True)
             return
 
-        # await interaction.response.defer()
         await interaction.response.send_modal(DeleteModal(view=self))
-
-        # await self.expiration_message(interaction.message)
 
 
     async def on_timeout(self):
         print('TIMEOUT VIEW')
-        await self.expiration_message()
+        await self.expiration_message(await self.__channel.fetch_message(self.__message_id))
 
 
-    async def expiration_message(self, message: discord.InteractionMessage = None):
+    async def expiration_message(self, message: discord.InteractionMessage):
         CivilWarCog.civil_count -= 1
         if not message:
             return
-            # message: discord.Message = await self.__message.channel.fetch_message(self.__message.id)
 
         await message.thread.delete(reason='만료')
         try:
@@ -222,8 +221,8 @@ class CivilWarCog(commands.Cog):
 
 
     @app_commands.command(name="내전생성", description="내전 인원을 모읍니다.")
-    @app_commands.describe(message="내용을 입력해주세요!", max_player="최대 인원입니다  (미지정 시 무한)", team_count="팀 수 입니다  (미지정 시 2팀)")
-    async def createCivilWar(self, interaction: discord.Interaction, message:str, max_player:app_commands.Range[int, 1] = 0, team_count:app_commands.Range[int, 1, 25] = 2):
+    @app_commands.describe(content="내용을 입력해주세요!", max_player="최대 인원입니다  (미지정 시 무한)", team_count="팀 수 입니다  (미지정 시 2팀)")
+    async def createCivilWar(self, interaction: discord.Interaction, content:str, max_player:app_commands.Range[int, 1] = 0, team_count:app_commands.Range[int, 1, 25] = 2):
         if isinstance(interaction.user, discord.User):
             await interaction.response.send_message('개인 메세지에선 지원하지 않습니다.')
             return
@@ -231,17 +230,16 @@ class CivilWarCog(commands.Cog):
             await interaction.response.send_message('스레드 밖에서 사용해 주세요.', ephemeral=True)
             return
         
-        view = CivilView(timeout=86400, author=interaction.user, content=message, max_player=max_player, team_count=team_count)
+        await interaction.response.send_message(content="생성 중 입니다.")
+        message = await interaction.original_response()
 
+        # view = CivilView(timeout=86400, author=interaction.user, content=content, max_player=max_player, team_count=team_count)
+        view = CivilView(timeout=86400, author=interaction.user, content=content, max_player=max_player, team_count=team_count, channel=interaction.channel, message_id=message.id)
         embed = view.new_embed()
 
-        await interaction.response.send_message(content=message, embed=embed, allowed_mentions=discord.AllowedMentions.all())
-        msg = await interaction.original_response()
+        await message.edit(content=content, embed=embed, view=view, allowed_mentions=discord.AllowedMentions.all())
+        await message.create_thread(name='팀 결과', auto_archive_duration=1440, reason='내전 생성')
 
-        await msg.create_thread(name='팀 결과', auto_archive_duration=1440, reason='내전 생성')
-
-
-        await msg.edit(view=view)
         print('Created a CivilWar!')
         CivilWarCog.civil_count += 1
 
