@@ -2,6 +2,7 @@ import discord
 from discord.ext import commands
 from discord import app_commands
 import random
+import asyncio
 
 from .errors import handle_error
 from .AdminManager import is_admin
@@ -132,16 +133,13 @@ class CivilView(discord.ui.View):
             await interaction.response.send_message(content='이 내전을 생성한 사람만 종료가 가능합니다.', ephemeral=True)
             return
 
-        await interaction.response.send_modal(DeleteModal(view=self))
+        await interaction.response.send_modal(DeleteModal(view=self)) # Modal을 띄워서 expiration_message 함수 호출
 
 
-    async def on_timeout(self):
-        print('TIMEOUT VIEW')
-        await self.expiration_message(await self.__channel.fetch_message(self.__message_id))
-
-
-    async def expiration_message(self, message: discord.InteractionMessage):
+    async def expiration_message(self):
         CivilWarCog.civil_count -= 1
+
+        message = await self.__channel.fetch_message(self.__message_id)
         if not message:
             return
 
@@ -207,7 +205,7 @@ class DeleteModal(discord.ui.Modal):
     async def on_submit(self, interaction: discord.Interaction):
         await interaction.response.defer()
 
-        await self.view.expiration_message(interaction.message)
+        await self.view.expiration_message()
 
 
 
@@ -233,8 +231,7 @@ class CivilWarCog(commands.Cog):
         await interaction.response.send_message(content="생성 중 입니다.")
         message = await interaction.original_response()
 
-        # view = CivilView(timeout=86400, author=interaction.user, content=content, max_player=max_player, team_count=team_count)
-        view = CivilView(timeout=86400, author=interaction.user, content=content, max_player=max_player, team_count=team_count, channel=interaction.channel, message_id=message.id)
+        view = CivilView(timeout=None, author=interaction.user, content=content, max_player=max_player, team_count=team_count, channel=interaction.channel, message_id=message.id)
         embed = view.new_embed()
 
         await message.edit(content=content, embed=embed, view=view, allowed_mentions=discord.AllowedMentions.all())
@@ -242,6 +239,10 @@ class CivilWarCog(commands.Cog):
 
         print('Created a CivilWar!')
         CivilWarCog.civil_count += 1
+
+        # 대기 후 내전 종료
+        await asyncio.sleep(86400)
+        await view.expiration_message()
 
     @app_commands.command(name="print-civil")
     async def print_civil(self, interaction: discord.Interaction):
