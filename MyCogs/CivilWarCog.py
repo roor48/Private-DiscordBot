@@ -137,6 +137,8 @@ class CivilView(discord.ui.View):
 
 
     async def expiration_message(self):
+        if self.is_finished():
+            return
         CivilWarCog.civil_count -= 1
 
         message = await self.__channel.fetch_message(self.__message_id)
@@ -153,7 +155,7 @@ class CivilView(discord.ui.View):
         self.clear_items()
         self.stop()
         await message.edit(content=self.content, embed=embed, view=self)
-        
+
 
 
 class EditModal(discord.ui.Modal):
